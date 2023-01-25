@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using CRUD.Api.Configurations;
+using CRUD.Api.Data;
 using CRUD.Api.Models;
 using CRUD.Api.Models.Dtos;
 using Microsoft.AspNetCore.Identity;
@@ -47,7 +48,7 @@ namespace CRUD.Api.Controllers
                         Errors = new List<string>()
                         {
                             "Email already exist"
-                        } 
+                        }
                     });
                 }
 
@@ -58,7 +59,7 @@ namespace CRUD.Api.Controllers
                     UserName = requestDto.Email
                 };
 
-                var isCreated = await _userManager.CreateAsync(newUser,requestDto.Password);
+                var isCreated = await _userManager.CreateAsync(newUser, requestDto.Password);
 
                 if (isCreated.Succeeded)
                 {
@@ -83,6 +84,58 @@ namespace CRUD.Api.Controllers
             }
 
             return BadRequest();
+        }
+
+        [Route("Login")]
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] UserLoginRequestDto userLoginRequestDto)
+        {
+            if (ModelState.IsValid)
+            {
+                // check if user exist
+                var existingUser = await _userManager.FindByEmailAsync(userLoginRequestDto.Email);
+
+                if (existingUser == null)
+                    return BadRequest(new AuthResult()
+                    {
+                        Errors = new List<string>()
+                        {
+                            "Invalid Payload"
+                        },
+
+                        Result = false
+                    });
+
+                var isCorrect = await _userManager.ChangePasswordAsync(existingUser, userLoginRequestDto.Password);
+
+                // var isCorrect = await _userManager.ChangePasswordAsync(existingUser, userLoginRequestDto.Password);
+
+                if (!isCorrect)
+                    return BadRequest(new AuthResult()
+                    {
+                        Errors = new List<string>()
+                        {
+                            "Invalid Credentials"
+                        }
+                    });
+
+                var jwtToken = GenerateJwtToken(existingUser);
+
+                return Ok(new AuthResult()
+                {
+                    Token = jwtToken,
+                    Result = true
+                });
+            }
+
+            return BadRequest(new AuthResult()
+            {
+                Errors = new List<string>()
+                {
+                    "Invalid Payload"
+                },
+                Result = false
+            });
         }
 
         private string GenerateJwtToken(IdentityUser user)
