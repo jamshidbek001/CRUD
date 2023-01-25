@@ -94,7 +94,7 @@ namespace CRUD.Api.Controllers
             // Token Decsriptor
             var tokenDescriptor = new SecurityTokenDescriptor()
             {
-                Subject = new ClaimsIdentity(new[]
+                Subject = new ClaimsIdentity(new []
                 {
                     new Claim("Id", user.Id),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
